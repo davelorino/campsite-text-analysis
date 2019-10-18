@@ -1,0 +1,265 @@
+---
+title: "Campsite Skills Text Analysis"
+author: "Davide Lorino"
+date: "28/09/2019"
+output: 
+  html_document:
+    keep_md: true
+    code_folding: show
+    toc: true
+    toc_float: true
+    toc_collapsed: true 
+    toc_depth: 3
+    number_sections: true 
+    theme: darkly
+    highlight: zenburn
+    df_print: paged
+---
+
+# Client Dataset
+
+First we'll read the dataset provided by the client - it's a list of jobs and the skills that belong to those jobs.
+
+```{r message=FALSE}
+library(tidyverse)
+## This is the dataset the client gave us
+skills <- readr::read_csv("campsitejobsskills.csv")
+skills <- skills[,1:20]
+skills
+```
+
+Ranking skills by how often they appear in a lists of "needed skills" to determine which skills are most needed across the marketplace. This has also been grouped by the clients 'importance' ranking for specific jobs. With this, we can see which skills are most needed in each of the two 'importance' categories of jobs.
+
+```{r}
+skills2 <- skills %>%
+  gather(key = "Property", value = "Skills", 
+         Skillset, Skillset1, Skillset2, Skillset3,
+         Skillset4, Skillset5, Skillset6, Skillset7, 
+         Skillset8, Skillset9, Skillset10, Skillset11, 
+         Skillset12, Skillset13, Skillset14, Skillset15, 
+         Skillset16, Skillset17, -"Jobs") %>%
+  group_by(Importance, Skills) %>%
+  summarise("Most_Important_Skills" = n()) %>%
+  arrange(desc(Importance), desc(Most_Important_Skills)) %>%
+  filter(!Skills == "NA")
+
+skills2
+```
+
+That was purely for fun, we won't be taking the results seriously for a number of reasons. Briefly, the jobs and skills dataset is only a working demo for the time being and my client plans to expand on it significantly. Beyond that, the importance ranking of jobs is not indicator of how often they will be posted to the platform because we don't have data to support that claim. 
+
+Now let's get the data into a shape we can use more easily.
+
+```{r}
+skills3 <- skills %>%
+  gather(key = "Property", value = "Skills", 
+         Skillset, Skillset1, Skillset2, Skillset3,
+         Skillset4, Skillset5, Skillset6, Skillset7, 
+         Skillset8, Skillset9, Skillset10, Skillset11, 
+         Skillset12, Skillset13, Skillset14, Skillset15, 
+         Skillset16, Skillset17, -"Jobs")
+
+skills3
+```
+
+I'm probably going to use this but i'll keep exploring the dataset for now anyway.
+
+```{r, eval=FALSE}
+write.csv(skills2, "skills2.csv")
+```
+
+# Cleaning
+
+Let's do some string cleaning. Replacing oddly spelled skills and homogenising. 
+
+```{r}
+library(stringr)
+
+skills %>%
+  gather(key = "Property", value = "Skills", 
+         Skillset, Skillset1, Skillset2, Skillset3,
+         Skillset4, Skillset5, Skillset6, Skillset7, 
+         Skillset8, Skillset9, Skillset10, Skillset11, 
+         Skillset12, Skillset13, Skillset14, Skillset15, 
+         Skillset16, Skillset17, -"Jobs") %>%
+  mutate(fixed_skills = case_when(
+    Skills == str_match(Skills, regex(".*Adobe.*Illustrator", ignore_case = TRUE)) ~ "Adobe Illustrator",
+    Skills == str_match(Skills, regex(".*Adobe.*Photoshop", ignore_case = TRUE)) ~ "Adobe Photoshop",
+    Skills == str_match(Skills, regex(".*Adobe.*", ignore_case = TRUE)) ~ "Adobe")) %>%
+  distinct(Skills)
+```
+
+Okay let's do more...
+
+```{r}
+
+skills3 <- skills %>%
+  gather(key = "Property", value = "Skills", 
+         Skillset, Skillset1, Skillset2, Skillset3,
+         Skillset4, Skillset5, Skillset6, Skillset7, 
+         Skillset8, Skillset9, Skillset10, Skillset11, 
+         Skillset12, Skillset13, Skillset14, Skillset15, 
+         Skillset16, Skillset17) %>%
+  mutate(fixed_skills = case_when(
+    Skills == str_match(Skills, regex(".*Machine Learning.*", ignore_case = TRUE)) ~ "Machine Learning",
+    Skills == str_match(Skills, regex(".*Social Media.*", ignore_case = TRUE)) ~ "Social Media Marketing",
+    Skills == str_match(Skills, regex(".*Data Viz.*", ignore_case = TRUE)) ~ "Data Visualization",
+    Skills == str_match(Skills, regex(".*Adobe.*Illustrator", ignore_case = TRUE)) ~ "Adobe Illustrator",
+    Skills == str_match(Skills, regex(".*Adobe.*Photoshop", ignore_case = TRUE)) ~ "Adobe Photoshop",
+    Skills == str_match(Skills, regex(".*Adobe.*", ignore_case = TRUE)) ~ "Adobe",
+    Skills == str_match(Skills, regex(".*SQL.*", ignore_case = TRUE)) ~ "SQL",
+    Skills == str_match(Skills, regex("SAS.*", ignore_case = TRUE)) ~ "SAS",
+    Skills == str_match(Skills, regex("Web analytics.*", ignore_case = TRUE)) ~ "Web Analytics",
+    Skills == str_match(Skills, regex("Photo editing.*", ignore_case = TRUE)) ~ "Photo Editing",
+    Skills == str_match(Skills, regex(".*Microsoft Office Pack: Word.*", ignore_case = TRUE)) ~ "Microsoft Word",
+    Skills == str_match(Skills, "Active listening") ~ "Active Listening",
+    Skills == str_match(Skills, "Infection control") ~ "Infection Control",
+    Skills == str_match(Skills, "Brand management") ~ "Brand Management",
+    Skills == str_match(Skills, "Email marketing") ~ "Email Marketing",
+    Skills == str_match(Skills, "Paid social media advertisements") ~ "Social Media Advertising",
+    Skills == str_match(Skills, "CSS preprocessors") ~ "CSS",
+    Skills == str_match(Skills, "Digital printing") ~ "Digital Printing",
+    Skills == str_match(Skills, "Responsive design principles") ~ "Responsive Design",
+    Skills == str_match(Skills, "Public speaking") ~ "Public Speaking",
+    Skills == str_match(Skills, "Lead generation") ~ "Lead Generation",
+    Skills == str_match(Skills, "Cold-calling") ~ "Cold Calling",
+    Skills == str_match(Skills, "Stress management") ~ "Stress Management",
+    Skills == str_match(Skills, "Technical writing") ~ "Technical Writing",
+    Skills == str_match(Skills, regex("Git.*", ignore_case = TRUE)) ~ "Git/Version Control",
+    Skills == str_match(Skills, regex(".*Cloud.*", ignore_case = TRUE)) ~ "Cloud Computing",
+    Skills == str_match(Skills, regex(".*Targeting and marketing.*", ignore_case = TRUE)) ~ "Visual Marketing",
+    Skills == str_match(Skills, regex(".*Targeting and marketing.*", ignore_case = TRUE)) ~ "Social ",
+    Skills == str_match(Skills, "Problem-solving") ~ "Problem Solving",
+    Skills == str_match(Skills, "Data entry") ~ "Data Entry",
+    Skills == str_match(Skills, "Buyer engagement") ~ "Buyer Engagement",
+    Skills == str_match(Skills, "Time management") ~ "Time Management",
+    Skills == str_match(Skills, "Numerical competence") ~ "Basic Mathematics",
+    Skills == str_match(Skills, "Task delegation") ~ "Task Delegation",
+    Skills == str_match(Skills, "line height") ~ "Line Height",
+    Skills == str_match(Skills, "Filing and paper management") ~ "Paperwork/Record Keeping",
+    Skills == str_match(Skills, "Logo creation") ~ "Logo Creation",
+    Skills == str_match(Skills, "Programming language \\(R") ~ "R",
+    Skills == str_match(Skills, "Matlab\\)") ~ "Matlab",
+    Skills == str_match(Skills, "Product knowledge") ~ "Product Knowledge",
+    Skills == str_match(Skills, "Updated curriculum knowledge") ~ "Curriculum Knowledge",
+    Skills == str_match(Skills, regex("Physical endurance.*", ignore_case = TRUE)) ~ "Physical Endurance",
+    Skills == str_match(Skills, regex(".*Data analysis.*", ignore_case = TRUE)) ~ "Data Analysis",
+    Skills == str_match(Skills, regex("PESTEL.*", ignore_case = TRUE)) ~ "PESTEL",
+    Skills == str_match(Skills, regex(".*Big Data.*", ignore_case = TRUE)) ~ "Big Data",
+    Skills == str_match(Skills, regex("Basic knowledge of user inter.*", ignore_case = TRUE)) ~ "User Interface",
+    Skills == str_match(Skills, regex("Porter.*", ignore_case = TRUE)) ~ "Porters Five Forces",
+    Skills == str_match(Skills, regex("Negotiation.*", ignore_case = TRUE)) ~ "Negotiation",
+    Skills == str_match(Skills, regex(".*GUI.*", ignore_case = TRUE)) ~ "User Interface",
+    Skills == str_match(Skills, regex(".*Communication.*", ignore_case = TRUE)) ~ "Clear Communication",
+    Skills == str_match(Skills, "General business knowledge") ~ "General Business Knowledge",
+    Skills == str_match(Skills, regex(".*Search Engine.*Optimization.*", ignore_case = TRUE)) ~ "Search Engine Optimization",
+    Skills == str_match(Skills, regex(".*SEO.*", ignore_case = TRUE)) ~ "Search Engine Optimization",
+    Skills == str_match(Skills, regex(".*Enterprise Resource Planning.*", ignore_case = TRUE)) ~ "Enterprise Resource Planning",
+    Skills == str_match(Skills, regex(".*Technological & digital.*", ignore_case = TRUE)) ~ "Technological Literacy",
+    Skills == str_match(Skills, regex(".*Paperwork.*", ignore_case = TRUE)) ~ "Paperwork/Record Keeping",
+    Skills == str_match(Skills, regex("Typography.*", ignore_case = TRUE)) ~ "Typography",
+    TRUE ~ Skills)) %>%
+  filter(!fixed_skills == "Closing" && !fixed_skills == "choosing" && !fixed_skills == "Photo") 
+```
+
+
+Let's have a look at the cleaned skills
+
+```{r}
+skills3 %>%
+  select(Skills, fixed_skills)
+```
+
+# Ranking 
+
+Ok let's arrange them in order of appearance but we won't worry about the importance ranking which we decided wasn't really valid earlier.
+
+```{r}
+skills3 %>%
+  group_by(fixed_skills) %>%
+  summarise(appearance = n()) %>%
+  filter(appearance < 367) %>%
+  arrange(desc(appearance))
+```
+
+Ok so among the skills within the skillset profiles provided by my client, it looks like among the top ten skills the most commonly sought after types of skills are soft skills. It's an interesting observation for now, maybe something to talk about later.  
+
+Ok so right now I need these skills to squish into a JSON object.
+
+Let's try a popular appoach - the jsonlite package.
+
+# Converting to JSON
+
+## jsonlite
+
+```{r}
+library(jsonlite)
+
+skills3 %>%
+  select(Jobs, fixed_skills) %>%
+  head(2) %>%
+  group_by(Jobs) %>%
+  toJSON() %>%
+  prettify()
+```
+
+Ok so the problem with the `jsonlite` approach is that each of the skills that belong to each of the jobs are not nesting into one JSON array, they are spreading out so that we have one 'Accountant' job for every skill within the 'Accountant' category. So we have 12 'Accountant' categories with one skill each. What we really want is one record of 'Accountant' and a nested JSON array of the 12 skills that match 'Accountant' 
+
+## String Manipulation
+
+Instead of using a library we can just do string manipulation to turn our data into the format we need it in.
+
+```{r}
+skills3 %>%
+  select(Jobs, fixed_skills) %>%
+  filter(fixed_skills != "NA") %>%
+  group_by(Jobs) %>%
+  summarise(fixed_skills2 = str_flatten(fixed_skills, collapse = '", "')) %>%
+  mutate(id = row_number()) %>%
+  mutate(fixed_skills3 = 
+           paste('{_id: ', 
+                 id,
+                 ', ',
+                 'name: "',
+                 Jobs,
+                 '",
+                 needed_skills: [{name: "',
+                 fixed_skills2,
+                 '"] },',
+            sep = '')) %>%
+  select(fixed_skills3) %>%
+  head(2)
+```
+
+Ok job done. Now we need to do some data visualizations because that's a requirement of the assessment.
+
+# Data Visualization
+
+```{r, include=FALSE}
+library(highcharter)
+```
+
+```{r}
+skills3 %>%
+  select(Jobs, fixed_skills) %>%
+  filter(!fixed_skills == "NA") %>%
+  group_by(fixed_skills) %>%
+  summarise("Number of Appearances" = n()) %>%
+  arrange(`Number of Appearances`) %>%
+  tail(15) %>%
+hchart("column", hcaes(x = fixed_skills, y = `Number of Appearances`)) %>%
+  hc_title(text = "<span style =\"color:#f9f1f1\">Top 15 Needed Skiils</span>", useHTML = TRUE, itemStyle = list(fontFamily = "courier new")) %>% hc_legend(useHTML = TRUE, itemStyle = list(color = "#f9f1f1", fontFamily = "courier new", fontWeight = "bold", fontFamily = "courier new")) %>%
+  hc_xAxis(labels = list(style = list(color = "#f9f1f1", fontFamily = "courier new", fontWeight = "bold", fontSize = "15px"))) %>%
+  hc_yAxis(labels = list(style = list(color = "#f9f1f1", fontFamily = "courier new", fontWeight = "bold", fontSize = "15px"))) %>%
+  hc_chart(style = list(fontFamily = "courier new")) %>%
+  hc_plotOptions(series = list(dataLabels = list(enabled = TRUE, color = "#f9f1f1", fontFamily = "courier new", fontSize = "15px")))
+
+```
+ 
+
+Let's export the file so we can use it.
+
+```{r, eval=FALSE}
+  write.csv("campsirebestskills.csv")
+
+```
